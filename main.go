@@ -15,7 +15,7 @@ var db *sql.DB
 
 // album represents data about a record album.
 type Album struct {
-	ID     int64  `json:"id"`
+	ID     int64   `json:"id"`
 	Title  string  `json:"title"`
 	Artist string  `json:"artist"`
 	Price  float64 `json:"price"`
@@ -64,10 +64,10 @@ func postAlbums(c *gin.Context) {
 	}
 
 	id, err := result.LastInsertId()
-    if err != nil {
-        c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err})
+	if err != nil {
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err})
 		return
-    }
+	}
 
 	var createdAlbum Album
 	createdAlbum.ID = id
@@ -134,11 +134,11 @@ func deleteAlbumByID(c *gin.Context) {
 
 func main() {
 	config := mysql.Config{
-		User: os.Getenv("DBUSER"),
-		Passwd: os.Getenv("DBPASS"),
-		Net: "tcp",
-		Addr: "127.0.0.1:3306",
-		DBName: "myapp",
+		User:                 os.Getenv("DBUSER"),
+		Passwd:               os.Getenv("DBPASS"),
+		Net:                  "tcp",
+		Addr:                 "127.0.0.1:3306",
+		DBName:               "myapp",
 		AllowNativePasswords: true,
 	}
 
