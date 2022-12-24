@@ -1,60 +1,165 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
 )
 
+var db *sql.DB
+
 // album represents data about a record album.
-type album struct {
-	ID     string  `json:"id"`
+type Album struct {
+	ID     int64  `json:"id"`
 	Title  string  `json:"title"`
 	Artist string  `json:"artist"`
 	Price  float64 `json:"price"`
 }
 
-// albums slice to seed record album data.
-var albums = []album{
-	{ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-	{ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-	{ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
-}
-
 func getAlbums(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
-}
+	var albums []Album
 
-func postAlbums(c *gin.Context) {
-	var newAlbum album
-
-	err := c.BindJSON(&newAlbum)
+	rows, err := db.Query("SELECT * FROM album")
 
 	if err != nil {
 		return
 	}
 
-	albums = append(albums, newAlbum)
-	c.IndentedJSON(http.StatusCreated, newAlbum)
+	defer rows.Close()
+
+	for rows.Next() {
+		var album Album
+		if err := rows.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err})
+			return
+		}
+		albums = append(albums, album)
+		if err := rows.Err(); err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err})
+			return
+		}
+	}
+	c.IndentedJSON(http.StatusOK, albums)
+}
+
+func postAlbums(c *gin.Context) {
+	var newAlbum Album
+
+	err := c.BindJSON(&newAlbum)
+
+	if err != nil {
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err})
+		return
+	}
+
+	result, err := db.Exec("INSERT INTO album (title, artist, price) VALUES (?, ?, ?)", newAlbum.Title, newAlbum.Artist, newAlbum.Price)
+	if err != nil {
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err})
+		return
+	}
+
+	id, err := result.LastInsertId()
+    if err != nil {
+        c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err})
+		return
+    }
+
+	var createdAlbum Album
+	createdAlbum.ID = id
+	createdAlbum.Artist = newAlbum.Artist
+	createdAlbum.Price = newAlbum.Price
+	createdAlbum.Title = newAlbum.Title
+	c.IndentedJSON(http.StatusCreated, &createdAlbum)
 }
 
 func getAlbumByID(c *gin.Context) {
 	id := c.Param("id")
 
-	for _, album := range albums {
-		if album.ID == id {
-			c.IndentedJSON(http.StatusOK, album)
+	var album Album
+
+	row := db.QueryRow("SELECT * FROM album WHERE id = ?", id)
+	if err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"message": err})
 			return
 		}
-		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found"})
 	}
+	c.IndentedJSON(http.StatusOK, &album)
+}
+
+func updateAlbumByID(c *gin.Context) {
+	var updateAlbum Album
+
+	id := c.Param("id")
+
+	if err := c.BindJSON(&updateAlbum); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "bind error"})
+		return
+	}
+
+	_, err := db.Exec("UPDATE album SET title = ?, artist = ?, price = ? WHERE id = ?", updateAlbum.Title, updateAlbum.Artist, updateAlbum.Price, id)
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "update error"})
+		return
+	}
+
+	c.IndentedJSON(http.StatusNoContent, &updateAlbum)
+}
+
+func deleteAlbumByID(c *gin.Context) {
+	id := c.Param("id")
+
+	var album Album
+
+	row := db.QueryRow("SELECT * FROM album WHERE id = ?", id)
+	if err := row.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
+		if err == sql.ErrNoRows {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"message": err})
+			return
+		}
+	}
+
+	if _, err := db.Exec("DELETE FROM album WHERE id = ?", id); err != nil {
+		c.IndentedJSON(http.StatusUnprocessableEntity, gin.H{"message": err})
+		return
+	}
+
+	c.IndentedJSON(http.StatusNoContent, &album)
 }
 
 func main() {
+	config := mysql.Config{
+		User: os.Getenv("DBUSER"),
+		Passwd: os.Getenv("DBPASS"),
+		Net: "tcp",
+		Addr: "127.0.0.1:3306",
+		DBName: "myapp",
+		AllowNativePasswords: true,
+	}
+
+	var err error
+	db, err = sql.Open("mysql", config.FormatDSN())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pingErr := db.Ping()
+	if pingErr != nil {
+		log.Fatal(pingErr)
+	}
+	fmt.Println("Connected!")
+
 	router := gin.Default()
 	router.GET("/albums", getAlbums)
 	router.GET("/albums/:id", getAlbumByID)
 	router.POST("/albums", postAlbums)
+	router.PATCH("/albums/:id", updateAlbumByID)
+	router.DELETE("/albums/:id", deleteAlbumByID)
 
 	router.Run("localhost:8080")
 }
