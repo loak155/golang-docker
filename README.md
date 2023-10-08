@@ -1,24 +1,19 @@
 # web-service-gin
 
-ginとmysqlを使った簡単なwebアプリケーションです。
+gin と mysql を使った簡単な web アプリケーションです。
 
-## mysql
+## 環境構築
 
-ホストでport 3306で起動してください。
+```bash:
+# コンテナ起動
+$ docker-compose up --build
 
-## 環境変数
-
-mysqlを使用するために以下の環境変数を設定してください
-
-- DBUSER
-- DBPASS
-
-## database
-
-- myappでdatabaseを作成してください。
-
-- sqlディレクトリ以下にテーブル作成とseedデータ作成のsqlファイルを作成しているので実行してください
-
-## docker
-
-docker化はしていないため、dockerを使用する場合は適宜コードを書き換えてください。
+# DB確認
+$ docker-compose exec mysql /bin/bash
+bash#  mysql -u test_user -p
+mysql> show databases;
+mysql> use test_db;
+mysql> show tables;
+mysql> SELECT * FROM album;
+mysql> \q
+```
