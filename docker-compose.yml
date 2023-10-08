@@ -4,9 +4,9 @@ services:
     image: mysql:8.1.0
     environment:
       - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=test_db
-      - MYSQL_USER=$DBUSER
-      - MYSQL_PASSWORD=$DBPASS
+      - MYSQL_DATABASE=${DBNAME}
+      - MYSQL_USER=${DBUSER}
+      - MYSQL_PASSWORD=${DBPASS}
       - TZ="Asia/Tokyo"
     ports:
       - 3306:3306
