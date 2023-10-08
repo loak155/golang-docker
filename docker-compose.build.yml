@@ -1,0 +1,12 @@
+version: '3'
+services:
+  development:
+    build:
+      context: .
+      target: development
+    image: development:latest
+  production:
+    build:
+      context: .
+      target: production
+    image: production:latest

@@ -13,5 +13,18 @@ services:
     volumes:
       - db-data:/var/lib/mysql
       - ./sql:/docker-entrypoint-initdb.d
+  api:
+    image: development:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - DBUSER=${DBUSER}
+      - DBPASS=${DBPASS}
+      - ADDR=mysql
+      - DBNAME=${DBNAME}
+    depends_on:
+      - mysql
+    entrypoint: [ "/app/wait-for.sh", "mysql:3306", "--" ]
+    command: [ "/app/main" ]
 volumes:
   db-data:

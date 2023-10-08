@@ -137,8 +137,8 @@ func main() {
 		User:                 os.Getenv("DBUSER"),
 		Passwd:               os.Getenv("DBPASS"),
 		Net:                  "tcp",
-		Addr:                 "127.0.0.1:3306",
-		DBName:               "myapp",
+		Addr:                 os.Getenv("ADDR"),
+		DBName:               os.Getenv("DBNAME"),
 		AllowNativePasswords: true,
 	}
 
