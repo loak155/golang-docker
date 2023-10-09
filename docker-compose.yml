@@ -24,7 +24,9 @@ services:
       - DBNAME=${DBNAME}
     depends_on:
       - mysql
+    volumes:
+      - .:/app/
     entrypoint: [ "/app/wait-for.sh", "mysql:3306", "--" ]
-    command: [ "/app/main" ]
+    command: [ "air", "-c", ".air.toml" ]
 volumes:
   db-data:
