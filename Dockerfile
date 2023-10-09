@@ -2,7 +2,9 @@
 FROM golang:1.21-alpine3.18 AS development
 WORKDIR /app
 COPY . .
+RUN go install github.com/cosmtrek/air@latest
 RUN go build -o main main.go
+CMD ["air", "-c", ".air.toml"]
 
 # Run stage
 FROM alpine:3.18 AS production
