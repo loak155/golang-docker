@@ -12,5 +12,6 @@ WORKDIR /app
 COPY --from=development /app/main .
 COPY .env .
 COPY wait-for.sh .
+RUN chmod +x wait-for.sh
 EXPOSE 8080
 CMD [ "/app/main" ]
